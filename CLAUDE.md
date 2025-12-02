@@ -65,6 +65,7 @@ Redis cache provides thresholds/price → Tier calculation → JSON response
 | `GET /api/lookup?address=rXXX` | Main lookup - returns tier, balance, percentile, progress |
 | `GET /api/thresholds` | Tier threshold XRP amounts |
 | `GET /api/stats` | Total accounts, median balance |
+| `GET /api/og?tier=X&percentile=Y&emoji=Z&color=HEX` | Dynamic OG image generation (1200x630) |
 | `GET /api/health` | Health check for Fly.io |
 
 ### Frontend Components
@@ -73,11 +74,13 @@ Redis cache provides thresholds/price → Tier calculation → JSON response
 - **[src/components/WalletForm.tsx](src/components/WalletForm.tsx)** - Address input with client-side validation
 - **[src/components/TierDisplay.tsx](src/components/TierDisplay.tsx)** - Tier reveal with animations
 - **[src/components/ProgressToNextTier.tsx](src/components/ProgressToNextTier.tsx)** - Progress bar with shimmer effect
+- **[src/components/ShareButton.tsx](src/components/ShareButton.tsx)** - Twitter/X share with intent URL
+- **[src/components/DistributionStats.tsx](src/components/DistributionStats.tsx)** - Total accounts and tier thresholds table
 
 ### Pages
 
 - **[src/app/page.tsx](src/app/page.tsx)** - Landing page (server component)
-- **[src/app/result/page.tsx](src/app/result/page.tsx)** - Results page (client component, fetches from API)
+- **[src/app/result/page.tsx](src/app/result/page.tsx)** - Results page (server component with `generateMetadata` for dynamic OG tags, renders `ResultContent` client component)
 
 ## Design System
 
