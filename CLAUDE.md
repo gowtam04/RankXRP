@@ -10,19 +10,22 @@ RankXRP is an XRP holder ranking tool that shows users their tier (Whale to Plan
 
 ```bash
 # Start local development with Docker (includes Redis)
-cd docker && docker-compose up -d
+docker-compose -f docker/docker-compose.yml up -d
 
 # View logs
-docker-compose logs -f app
+docker-compose -f docker/docker-compose.yml logs -f app
 
 # Stop containers
-docker-compose down
+docker-compose -f docker/docker-compose.yml down
 
-# Run without Docker (requires Redis running locally)
+# Run without Docker (requires Redis running locally on port 6379)
 npm run dev
 
 # Type check
 npx tsc --noEmit
+
+# Lint
+npm run lint
 
 # Build for production
 npm run build
@@ -94,9 +97,7 @@ CSS classes in [src/app/globals.css](src/app/globals.css):
 
 **next.config.mjs** - Must externalize xrpl/ws packages to avoid WebSocket bundling issues:
 ```js
-experimental: {
-  serverComponentsExternalPackages: ['xrpl', 'ws', 'bufferutil', 'utf-8-validate'],
-}
+serverExternalPackages: ['xrpl', 'ws', 'bufferutil', 'utf-8-validate'],
 ```
 
 **Environment Variables**:
@@ -105,9 +106,15 @@ experimental: {
 
 ## Deployment
 
+Production: https://rankxrp.fly.dev/
+
 Fly.io configuration in [fly.toml](fly.toml). Deploy with:
 ```bash
-fly launch --name rankxrp
-fly redis create
+# Initial setup
+fly launch --name rankxrp --yes
+fly redis create --name rankxrp-redis --region sjc --no-replicas --org personal --enable-eviction
+fly secrets set REDIS_URL=<redis-url-from-above>
+
+# Deploy updates
 fly deploy
 ```

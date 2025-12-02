@@ -15,10 +15,6 @@ interface RichListAccount {
   rank: number;
 }
 
-interface DistributionStats {
-  totalAccounts: number;
-  thresholds: Map<number, number>;
-}
 
 async function fetchRichListSample(): Promise<RichListAccount[]> {
   const response = await fetch(XRPSCAN_RICH_LIST_URL, {
@@ -53,7 +49,7 @@ function calculateThresholdsFromDistribution(
       percentile: tier.percentile,
       minimumXrp: account
         ? parseFloat(account.balance) / 1_000_000 // Convert drops to XRP
-        : getEstimatedThreshold(tier.percentile, totalAccounts),
+        : getEstimatedThreshold(tier.percentile),
     });
   }
 
@@ -61,7 +57,7 @@ function calculateThresholdsFromDistribution(
 }
 
 // Fallback estimates based on historical XRP distribution data
-function getEstimatedThreshold(percentile: number, totalAccounts: number): number {
+function getEstimatedThreshold(percentile: number): number {
   // Based on ~4.8M accounts and historical distribution
   const estimates: Record<number, number> = {
     0.01: 10_000_000, // Whale: Top 0.01%
@@ -83,7 +79,7 @@ function getDefaultThresholds(): TierThreshold[] {
     name: tier.name,
     emoji: tier.emoji,
     percentile: tier.percentile,
-    minimumXrp: getEstimatedThreshold(tier.percentile, 4_800_000),
+    minimumXrp: getEstimatedThreshold(tier.percentile),
   }));
 }
 

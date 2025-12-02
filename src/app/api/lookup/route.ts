@@ -4,10 +4,6 @@ import { isValidXrpAddress, getAccountBalance, AccountNotFoundError } from '@/li
 import { getXrpPrice, getDistributionData, calculateTier } from '@/lib/services';
 import type { LookupResponse, ErrorResponse } from '@/lib/types/api';
 
-const LookupQuerySchema = z.object({
-  address: z.string().min(25).max(50),
-});
-
 export async function GET(request: NextRequest) {
   try {
     // Parse and validate address from query params

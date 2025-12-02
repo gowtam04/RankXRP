@@ -11,7 +11,7 @@ export async function getXrplClient(): Promise<Client> {
   try {
     await client.connect();
     return client;
-  } catch (error) {
+  } catch {
     console.error('Failed to connect to primary XRPL node, trying fallback...');
     const fallbackClient = new Client(FALLBACK_URL, {
       connectionTimeout: 10000,

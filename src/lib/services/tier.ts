@@ -16,7 +16,7 @@ export function calculateTier(
   balance: number,
   thresholdsData: CachedThresholds
 ): TierResult {
-  const { thresholds, totalAccounts } = thresholdsData;
+  const { thresholds } = thresholdsData;
 
   // Sort thresholds by minimumXrp descending (highest balance first)
   const sortedThresholds = [...thresholds].sort(
@@ -82,7 +82,7 @@ function calculateExactPercentile(
   balance: number,
   thresholdsData: CachedThresholds
 ): number {
-  const { thresholds, totalAccounts } = thresholdsData;
+  const { thresholds } = thresholdsData;
 
   // Sort thresholds by minimumXrp ascending
   const sortedByBalance = [...thresholds].sort(
