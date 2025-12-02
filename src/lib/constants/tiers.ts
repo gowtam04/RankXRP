@@ -29,38 +29,38 @@ export const TIERS: Tier[] = [
     description: 'Top 1% of XRP holders',
   },
   {
-    name: 'Tuna',
+    name: 'Fish',
     emoji: '🐟',
     percentile: 5,
     color: '#0D9488',
     description: 'Top 5% of XRP holders',
   },
   {
-    name: 'Squid',
-    emoji: '🦑',
+    name: 'Octopus',
+    emoji: '🐙',
     percentile: 10,
     color: '#8B5CF6',
     description: 'Top 10% of XRP holders',
   },
   {
-    name: 'Shrimp',
-    emoji: '🦐',
+    name: 'Crab',
+    emoji: '🦀',
     percentile: 25,
-    color: '#F472B6',
+    color: '#F97316',
     description: 'Top 25% of XRP holders',
   },
   {
-    name: 'Crab',
-    emoji: '🦀',
+    name: 'Shrimp',
+    emoji: '🦐',
     percentile: 50,
-    color: '#F97316',
+    color: '#F472B6',
     description: 'Top 50% of XRP holders',
   },
   {
-    name: 'Plankton',
-    emoji: '🦠',
+    name: 'Worm',
+    emoji: '🪱',
     percentile: 100,
-    color: '#22C55E',
+    color: '#A16207',
     description: 'XRP holder',
   },
 ];
@@ -75,5 +75,5 @@ export function getTierByPercentile(percentile: number): Tier {
       return tier;
     }
   }
-  return TIERS[TIERS.length - 1]; // Default to Plankton
+  return TIERS[TIERS.length - 1]; // Default to Worm
 }

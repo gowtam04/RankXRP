@@ -4,11 +4,11 @@ const TIERS = [
   { name: 'Whale', emoji: '🐋', percentile: 'Top 0.01%', color: '#3B82F6' },
   { name: 'Shark', emoji: '🦈', percentile: 'Top 0.1%', color: '#64748B' },
   { name: 'Dolphin', emoji: '🐬', percentile: 'Top 1%', color: '#06B6D4' },
-  { name: 'Tuna', emoji: '🐟', percentile: 'Top 5%', color: '#0D9488' },
-  { name: 'Squid', emoji: '🦑', percentile: 'Top 10%', color: '#8B5CF6' },
-  { name: 'Shrimp', emoji: '🦐', percentile: 'Top 25%', color: '#F472B6' },
-  { name: 'Crab', emoji: '🦀', percentile: 'Top 50%', color: '#F97316' },
-  { name: 'Plankton', emoji: '🦠', percentile: 'Bottom 50%', color: '#22C55E' },
+  { name: 'Fish', emoji: '🐟', percentile: 'Top 5%', color: '#0D9488' },
+  { name: 'Octopus', emoji: '🐙', percentile: 'Top 10%', color: '#8B5CF6' },
+  { name: 'Crab', emoji: '🦀', percentile: 'Top 25%', color: '#F97316' },
+  { name: 'Shrimp', emoji: '🦐', percentile: 'Top 50%', color: '#F472B6' },
+  { name: 'Worm', emoji: '🪱', percentile: 'Bottom 50%', color: '#A16207' },
 ];
 
 export default function TierOverview() {

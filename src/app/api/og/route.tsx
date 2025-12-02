@@ -5,10 +5,10 @@ export const runtime = 'edge';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
-  const tier = searchParams.get('tier') || 'Plankton';
+  const tier = searchParams.get('tier') || 'Worm';
   const percentile = searchParams.get('percentile') || '50';
-  const emoji = searchParams.get('emoji') || '🦠';
-  const color = `#${searchParams.get('color') || '22C55E'}`;
+  const emoji = searchParams.get('emoji') || '🪱';
+  const color = `#${searchParams.get('color') || 'A16207'}`;
 
   return new ImageResponse(
     (

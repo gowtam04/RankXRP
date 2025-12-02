@@ -7,12 +7,6 @@ interface BalanceCardProps {
 }
 
 function formatNumber(num: number, decimals: number = 2): string {
-  if (num >= 1_000_000) {
-    return (num / 1_000_000).toFixed(2) + 'M';
-  }
-  if (num >= 1_000) {
-    return (num / 1_000).toFixed(2) + 'K';
-  }
   return num.toLocaleString('en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,

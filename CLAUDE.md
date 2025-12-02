@@ -56,7 +56,7 @@ Redis cache provides thresholds/price → Tier calculation → JSON response
   - `xrpscan.ts` - Distribution data with stale-while-revalidate pattern
   - `tier.ts` - `calculateTier()` determines tier, percentile, and progress
 
-- **[src/lib/constants/tiers.ts](src/lib/constants/tiers.ts)** - 8 tier definitions with colors and percentiles
+- **[src/lib/constants/tiers.ts](src/lib/constants/tiers.ts)** - 8 tiers: Whale, Shark, Dolphin, Fish, Octopus, Crab, Shrimp, Worm
 
 ### API Endpoints
 
@@ -70,6 +70,7 @@ Redis cache provides thresholds/price → Tier calculation → JSON response
 
 ### Frontend Components
 
+- **[src/components/BalanceCard.tsx](src/components/BalanceCard.tsx)** - Wallet address and balance display with USD conversion
 - **[src/components/ParticleBackground.tsx](src/components/ParticleBackground.tsx)** - Canvas-based bioluminescent particle effect
 - **[src/components/WalletForm.tsx](src/components/WalletForm.tsx)** - Address input with client-side validation
 - **[src/components/TierDisplay.tsx](src/components/TierDisplay.tsx)** - Tier reveal with animations
@@ -101,7 +102,15 @@ CSS classes in [src/app/globals.css](src/app/globals.css):
 **next.config.mjs** - Must externalize xrpl/ws packages to avoid WebSocket bundling issues:
 ```js
 serverExternalPackages: ['xrpl', 'ws', 'bufferutil', 'utf-8-validate'],
+webpack: (config, { isServer }) => {
+  if (isServer) {
+    config.externals = config.externals || [];
+    config.externals.push('xrpl', 'ws', 'bufferutil', 'utf-8-validate');
+  }
+  return config;
+},
 ```
+Note: Both `serverExternalPackages` and webpack externals are configured for compatibility.
 
 **Environment Variables**:
 - `REDIS_URL` - Redis connection string (default: `redis://localhost:6379`)
