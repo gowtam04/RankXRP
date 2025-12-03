@@ -1,0 +1,63 @@
+name: Daily Distribution Scan
+
+on:
+  # Run every day at 3am UTC
+  schedule:
+    - cron: '0 3 * * *'
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  trigger-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Distribution Scan
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://rankxrp.fly.dev/api/scan/trigger" \
+            -H "Authorization: Bearer ${{ secrets.SCAN_API_KEY }}" \
+            -H "Content-Type: application/json")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "Response: $body"
+          echo "HTTP Status: $http_code"
+
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "Scan triggered successfully"
+          elif [ "$http_code" -eq 409 ]; then
+            echo "Scan already in progress, skipping"
+          else
+            echo "Failed to trigger scan"
+            exit 1
+          fi
+
+      - name: Wait for Scan to Complete
+        run: |
+          echo "Waiting 5 minutes for scan to start processing..."
+          sleep 300
+
+          # Poll status for up to 45 minutes
+          for i in {1..45}; do
+            response=$(curl -s "https://rankxrp.fly.dev/api/scan/status")
+            status=$(echo "$response" | jq -r '.status')
+
+            echo "Scan status: $status"
+
+            if [ "$status" = "completed" ]; then
+              echo "Scan completed successfully!"
+              echo "$response" | jq '.thresholds'
+              exit 0
+            elif [ "$status" = "failed" ]; then
+              echo "Scan failed!"
+              echo "$response" | jq '.error'
+              exit 1
+            fi
+
+            echo "Still running... waiting 1 minute"
+            sleep 60
+          done
+
+          echo "Scan timed out after 45 minutes"
+          exit 1

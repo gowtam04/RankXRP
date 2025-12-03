@@ -1,59 +1,52 @@
 import {
   getCachedThresholds,
-  setCachedThresholds,
   isThresholdsCacheStale,
   TierThreshold,
   CachedThresholds,
 } from '@/lib/cache';
 import { TIERS } from '@/lib/constants/tiers';
+import { getThresholds as getDbThresholds, getTotalAccounts, getDb } from '@/lib/db';
 
-const XRPSCAN_RICH_LIST_URL = 'https://api.xrpscan.com/api/v1/richlist';
+// Max age for SQLite data before we consider it stale (2 days)
+// With daily scans, data older than 2 days indicates a missed scan
+const SQLITE_MAX_AGE_MS = 2 * 24 * 60 * 60 * 1000;
 
-interface RichListAccount {
-  account: string;
-  balance: string;
-  rank: number;
-}
+/**
+ * Try to get distribution data from SQLite database.
+ * Returns null if no data exists or data is too old.
+ */
+function getDistributionFromSqlite(): CachedThresholds | null {
+  try {
+    getDb(); // Ensure DB is initialized
+    const dbThresholds = getDbThresholds();
 
+    if (dbThresholds.length === 0) {
+      return null;
+    }
 
-async function fetchRichListSample(): Promise<RichListAccount[]> {
-  const response = await fetch(XRPSCAN_RICH_LIST_URL, {
-    headers: {
-      Accept: 'application/json',
-    },
-  });
+    // Check if data is too old
+    const oldestUpdate = Math.min(...dbThresholds.map((t) => t.updated_at));
+    if (Date.now() - oldestUpdate > SQLITE_MAX_AGE_MS) {
+      console.log('[xrpscan] SQLite data is stale, will use fallback');
+      return null;
+    }
 
-  if (!response.ok) {
-    throw new Error(`XRPScan API error: ${response.status}`);
+    const totalAccounts = getTotalAccounts();
+
+    return {
+      thresholds: dbThresholds.map((t) => ({
+        name: t.name,
+        emoji: t.emoji,
+        percentile: t.percentile,
+        minimumXrp: t.min_xrp,
+      })),
+      totalAccounts,
+      timestamp: oldestUpdate,
+    };
+  } catch (error) {
+    console.warn('[xrpscan] Failed to read from SQLite:', error);
+    return null;
   }
-
-  return response.json();
-}
-
-function calculateThresholdsFromDistribution(
-  accounts: RichListAccount[],
-  totalAccounts: number
-): TierThreshold[] {
-  const thresholds: TierThreshold[] = [];
-
-  for (const tier of TIERS) {
-    // Calculate the rank that corresponds to this percentile
-    const targetRank = Math.floor((tier.percentile / 100) * totalAccounts);
-
-    // Find the account closest to this rank
-    const account = accounts.find((a) => a.rank >= targetRank);
-
-    thresholds.push({
-      name: tier.name,
-      emoji: tier.emoji,
-      percentile: tier.percentile,
-      minimumXrp: account
-        ? parseFloat(account.balance) / 1_000_000 // Convert drops to XRP
-        : getEstimatedThreshold(tier.percentile),
-    });
-  }
-
-  return thresholds;
 }
 
 // Fallback estimates based on historical XRP distribution data
@@ -84,58 +77,30 @@ function getDefaultThresholds(): TierThreshold[] {
 }
 
 export async function getDistributionData(): Promise<CachedThresholds> {
-  // Check cache first
+  // 1. Try SQLite first (most accurate, from our scans)
+  const sqliteData = getDistributionFromSqlite();
+  if (sqliteData) {
+    return sqliteData;
+  }
+
+  // 2. Fall back to Redis cache
   const cached = await getCachedThresholds();
   if (cached && !isThresholdsCacheStale(cached.timestamp)) {
     return cached;
   }
 
-  // If cache exists but is stale, return it and refresh in background
+  // 3. Return stale cache if available
   if (cached) {
-    refreshDistributionDataInBackground();
     return cached;
   }
 
-  // No cache, must fetch
-  try {
-    return await refreshDistributionData();
-  } catch (error) {
-    console.error('Failed to fetch distribution data, using defaults:', error);
-    // Return default thresholds
-    const defaults: CachedThresholds = {
-      thresholds: getDefaultThresholds(),
-      totalAccounts: 4_800_000, // Estimated
-      timestamp: Date.now(),
-    };
-    return defaults;
-  }
-}
-
-async function refreshDistributionData(): Promise<CachedThresholds> {
-  const richList = await fetchRichListSample();
-
-  // Estimate total accounts from richlist data
-  // XRPScan richlist shows top accounts, we use the last rank as reference
-  const lastAccount = richList[richList.length - 1];
-  const estimatedTotal = lastAccount?.rank
-    ? Math.max(lastAccount.rank * 100, 4_800_000) // Rough estimate
-    : 4_800_000;
-
-  const thresholds = calculateThresholdsFromDistribution(richList, estimatedTotal);
-
-  await setCachedThresholds(thresholds, estimatedTotal);
-
+  // 4. Last resort: use hardcoded defaults
+  console.warn('[xrpscan] No distribution data available, using defaults');
   return {
-    thresholds,
-    totalAccounts: estimatedTotal,
+    thresholds: getDefaultThresholds(),
+    totalAccounts: 4_800_000, // Estimated
     timestamp: Date.now(),
   };
-}
-
-function refreshDistributionDataInBackground(): void {
-  refreshDistributionData().catch((error) => {
-    console.error('Background distribution refresh failed:', error);
-  });
 }
 
 export async function getDistributionStats(): Promise<{

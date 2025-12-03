@@ -11,3 +11,9 @@ export {
   isThresholdsCacheStale,
 } from './thresholds';
 export type { TierThreshold, CachedThresholds } from './thresholds';
+export {
+  getScanProgress,
+  setScanProgress,
+  updateScanProgress,
+} from './scan-progress';
+export type { ScanProgress } from './scan-progress';

@@ -29,6 +29,9 @@ npm run lint
 
 # Build for production
 npm run build
+
+# Run XRPL distribution scan (scans ~6.5M accounts, takes 20-40 minutes)
+npm run scan
 ```
 
 ## Architecture
@@ -50,11 +53,17 @@ Redis cache provides thresholds/price → Tier calculation → JSON response
   - `redis.ts` - ioredis singleton client
   - `price.ts` - XRP price cache (5-min TTL, key: `xrp:price:usd`)
   - `thresholds.ts` - Tier thresholds cache (1-hour TTL, key: `xrp:thresholds`)
+  - `scan-progress.ts` - Scan status in Redis (shared across Fly.io machines, key: `xrp:scan:progress`)
+
+- **[src/lib/db/](src/lib/db/)** - SQLite database for distribution data
+  - `index.ts` - better-sqlite3 connection, stores account balances and calculated thresholds
+  - Production path: `/data/xrp.db` (Fly.io volume), Dev path: `./data/xrp.db`
 
 - **[src/lib/services/](src/lib/services/)** - Business logic
   - `coingecko.ts` - Price fetching with Binance fallback
   - `xrpscan.ts` - Distribution data with stale-while-revalidate pattern
   - `tier.ts` - `calculateTier()` determines tier, percentile, and progress
+  - `distribution-scanner.ts` - Scans all XRPL accounts via `ledger_data` to calculate real percentile thresholds
 
 - **[src/lib/constants/tiers.ts](src/lib/constants/tiers.ts)** - 8 tiers: Whale, Shark, Dolphin, Fish, Octopus, Crab, Shrimp, Worm
 
@@ -67,6 +76,8 @@ Redis cache provides thresholds/price → Tier calculation → JSON response
 | `GET /api/stats` | Total accounts, median balance |
 | `GET /api/og?tier=X&percentile=Y&emoji=Z&color=HEX` | Dynamic OG image generation (1200x630) |
 | `GET /api/health` | Health check for Fly.io |
+| `POST /api/scan/trigger` | Start distribution scan (requires `SCAN_API_KEY` auth) |
+| `GET /api/scan/status` | Current scan progress and calculated thresholds |
 
 ### Frontend Components
 
@@ -82,6 +93,7 @@ Redis cache provides thresholds/price → Tier calculation → JSON response
 
 - **[src/app/page.tsx](src/app/page.tsx)** - Landing page (server component)
 - **[src/app/result/page.tsx](src/app/result/page.tsx)** - Results page (server component with `generateMetadata` for dynamic OG tags, renders `ResultContent` client component)
+- **[src/app/admin/scan/page.tsx](src/app/admin/scan/page.tsx)** - Hidden admin page for manual scan control (no nav links, direct URL only)
 
 ## Design System
 
@@ -115,6 +127,7 @@ Note: Both `serverExternalPackages` and webpack externals are configured for com
 **Environment Variables**:
 - `REDIS_URL` - Redis connection string (default: `redis://localhost:6379`)
 - `NEXT_PUBLIC_APP_URL` - App URL for OG images
+- `SCAN_API_KEY` - API key for scan trigger endpoint (if not set, allows localhost requests)
 
 ## Deployment
 
@@ -130,3 +143,28 @@ fly secrets set REDIS_URL=<redis-url-from-above>
 # Deploy updates
 fly deploy
 ```
+
+## Distribution Scanner
+
+The scanner iterates through all XRPL accounts using the `ledger_data` command to calculate real percentile thresholds (instead of hardcoded estimates).
+
+**Architecture:**
+- Scan progress stored in Redis (shared across Fly.io machines)
+- Account balances stored in SQLite (on Fly.io volume `/data`)
+- Thresholds calculated via SQL window functions after scan completes
+- Admin page at `/admin/scan` for manual control
+
+**Triggering a scan:**
+```bash
+# Via API (production)
+curl -X POST https://rankxrp.fly.dev/api/scan/trigger \
+  -H "Authorization: Bearer $SCAN_API_KEY"
+
+# Via CLI (local/SSH)
+npm run scan
+```
+
+**Key files:**
+- `src/scripts/run-scan.ts` - CLI entry point
+- `src/lib/services/distribution-scanner.ts` - Core scanning logic
+- `src/components/admin/ScanAdminPanel.tsx` - Admin UI component
