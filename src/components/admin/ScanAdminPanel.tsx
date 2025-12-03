@@ -88,13 +88,12 @@ export default function ScanAdminPanel() {
       if (!res.ok) {
         throw new Error(data.error || 'Failed to trigger scan');
       }
-
-      // Refresh status
-      await fetchStatus();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsTriggering(false);
+      // Always refresh status after trigger attempt (success or failure)
+      await fetchStatus();
     }
   };
 
