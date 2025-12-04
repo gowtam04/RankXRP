@@ -53,11 +53,11 @@ Redis cache provides thresholds/price → Tier calculation → JSON response
   - `redis.ts` - ioredis singleton client
   - `price.ts` - XRP price cache (5-min TTL, key: `xrp:price:usd`)
   - `thresholds.ts` - Tier thresholds cache (1-hour TTL, key: `xrp:thresholds`)
-  - `scan-progress.ts` - Scan status in Redis (shared across Fly.io machines, key: `xrp:scan:progress`)
+  - `scan-progress.ts` - Scan status in Redis (key: `xrp:scan:progress`)
 
 - **[src/lib/db/](src/lib/db/)** - SQLite database for distribution data
   - `index.ts` - better-sqlite3 connection, stores account balances and calculated thresholds
-  - Production path: `/data/xrp.db` (Fly.io volume), Dev path: `./data/xrp.db`
+  - Database path: `./data/xrp.db`
 
 - **[src/lib/services/](src/lib/services/)** - Business logic
   - `coingecko.ts` - Price fetching with Binance fallback
@@ -75,7 +75,6 @@ Redis cache provides thresholds/price → Tier calculation → JSON response
 | `GET /api/thresholds` | Tier threshold XRP amounts |
 | `GET /api/stats` | Total accounts, median balance |
 | `GET /api/og?tier=X&percentile=Y&emoji=Z&color=HEX` | Dynamic OG image generation (1200x630) |
-| `GET /api/health` | Health check for Fly.io |
 | `POST /api/scan/trigger` | Start distribution scan (requires `SCAN_API_KEY` auth) |
 | `GET /api/scan/status` | Current scan progress and calculated thresholds |
 
@@ -129,38 +128,23 @@ Note: Both `serverExternalPackages` and webpack externals are configured for com
 - `NEXT_PUBLIC_APP_URL` - App URL for OG images
 - `SCAN_API_KEY` - API key for scan trigger endpoint (if not set, allows localhost requests)
 
-## Deployment
-
-Production: https://rankxrp.fly.dev/
-
-Fly.io configuration in [fly.toml](fly.toml). Deploy with:
-```bash
-# Initial setup
-fly launch --name rankxrp --yes
-fly redis create --name rankxrp-redis --region sjc --no-replicas --org personal --enable-eviction
-fly secrets set REDIS_URL=<redis-url-from-above>
-
-# Deploy updates
-fly deploy
-```
-
 ## Distribution Scanner
 
 The scanner iterates through all XRPL accounts using the `ledger_data` command to calculate real percentile thresholds (instead of hardcoded estimates).
 
 **Architecture:**
-- Scan progress stored in Redis (shared across Fly.io machines)
-- Account balances stored in SQLite (on Fly.io volume `/data`)
+- Scan progress stored in Redis
+- Account balances stored in SQLite (`./data/xrp.db`)
 - Thresholds calculated via SQL window functions after scan completes
 - Admin page at `/admin/scan` for manual control
 
 **Triggering a scan:**
 ```bash
-# Via API (production)
-curl -X POST https://rankxrp.fly.dev/api/scan/trigger \
+# Via API
+curl -X POST http://localhost:3000/api/scan/trigger \
   -H "Authorization: Bearer $SCAN_API_KEY"
 
-# Via CLI (local/SSH)
+# Via CLI
 npm run scan
 ```
 

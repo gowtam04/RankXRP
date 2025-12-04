@@ -1,7 +1,7 @@
 import { getCached, setCache } from './redis';
 
 const THRESHOLDS_CACHE_KEY = 'xrp:thresholds';
-const THRESHOLDS_TTL_SECONDS = 3600; // 1 hour
+const THRESHOLDS_TTL_SECONDS = 86400; // 24 hours (distribution changes slowly)
 
 export interface TierThreshold {
   name: string;

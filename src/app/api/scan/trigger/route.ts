@@ -62,6 +62,10 @@ export async function POST(request: NextRequest) {
     completedAt: null,
     ledgerIndex: null,
     error: null,
+    lastCheckpoint: null,
+    consecutiveErrors: 0,
+    nodeUrl: null,
+    estimatedTotalAccounts: 7000000,
   });
 
   // Start scan in background (don't await)
@@ -86,6 +90,10 @@ export async function POST(request: NextRequest) {
         completedAt: Date.now(),
         ledgerIndex: null,
         error: err instanceof Error ? err.message : 'Unknown error',
+        lastCheckpoint: Date.now(),
+        consecutiveErrors: 0,
+        nodeUrl: null,
+        estimatedTotalAccounts: 7000000,
       });
     });
 

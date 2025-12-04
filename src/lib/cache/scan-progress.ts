@@ -4,13 +4,18 @@ const SCAN_PROGRESS_KEY = 'xrp:scan:progress';
 const SCAN_PROGRESS_TTL = 24 * 60 * 60; // 24 hours
 
 export interface ScanProgress {
-  status: 'idle' | 'running' | 'completed' | 'failed';
+  status: 'idle' | 'running' | 'completed' | 'failed' | 'paused';
   marker: string | null;
   processedAccounts: number;
   startedAt: number | null;
   completedAt: number | null;
   ledgerIndex: number | null;
   error: string | null;
+  // Phase 2 additions for resilience
+  lastCheckpoint: number | null;
+  consecutiveErrors: number;
+  nodeUrl: string | null;
+  estimatedTotalAccounts: number;
 }
 
 const DEFAULT_PROGRESS: ScanProgress = {
@@ -21,6 +26,10 @@ const DEFAULT_PROGRESS: ScanProgress = {
   completedAt: null,
   ledgerIndex: null,
   error: null,
+  lastCheckpoint: null,
+  consecutiveErrors: 0,
+  nodeUrl: null,
+  estimatedTotalAccounts: 7000000, // ~7M accounts on XRPL
 };
 
 export async function getScanProgress(): Promise<ScanProgress> {
